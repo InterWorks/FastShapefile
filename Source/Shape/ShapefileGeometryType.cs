@@ -33,6 +33,26 @@ namespace FastShapefile.Shape
         /// <summary>
         /// MultiPoint
         /// </summary>
-        MultiPoint = 8
+        MultiPoint = 8,
+
+        /// <summary>
+        /// PointZ
+        /// </summary>
+        PointZ = 11,
+
+        /// <summary>
+        /// PolyLineZ
+        /// </summary>
+        PolyLineZ = 13,
+
+        /// <summary>
+        /// PolygonZ
+        /// </summary>
+        PolygonZ = 15,
+
+        /// <summary>
+        /// MultiPointZ
+        /// </summary>
+        MultiPointZ = 18
     }
 }

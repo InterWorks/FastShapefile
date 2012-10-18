@@ -34,15 +34,19 @@ namespace FastShapefile.Shape
             switch (ShapeHeader.ShapeType)
             {
                 case ShapefileGeometryType.Point:
+                case ShapefileGeometryType.PointZ:
                     _shapeFunc = ReadPoint;
                     break;
                 case ShapefileGeometryType.PolyLine:
+                case ShapefileGeometryType.PolyLineZ:
                     _shapeFunc = ReadPolyLine;
                     break;
                 case ShapefileGeometryType.Polygon:
+                case ShapefileGeometryType.PolygonZ:
                     _shapeFunc = ReadPolygon;
                     break;
                 case ShapefileGeometryType.MultiPoint:
+                case ShapefileGeometryType.MultiPointZ:
                     _shapeFunc = ReadMultiPoint;
                     break;
                 default:
@@ -106,12 +110,18 @@ namespace FastShapefile.Shape
             if (type == ShapefileGeometryType.NullShape)
                 return _gf.CreatePoint((Coordinate)null);
 
-            if (type != ShapefileGeometryType.Point)
+            if (type == ShapefileGeometryType.Point)
+                return _gf.CreatePoint(new Coordinate(
+                    _reader.ReadDouble(),
+                    _reader.ReadDouble()));
+            else if (type == ShapefileGeometryType.PointZ)
+                return _gf.CreatePoint(new Coordinate(
+                    _reader.ReadDouble(),
+                    _reader.ReadDouble(),
+                    _reader.ReadDouble(),
+                    _reader.ReadDouble()));
+            else
                 throw new Exception("Attempting to load a non-point as point.");	
-
-            return _gf.CreatePoint(new Coordinate(
-                _reader.ReadDouble(),
-                _reader.ReadDouble()));
         }
 
         #endregion
@@ -124,7 +134,7 @@ namespace FastShapefile.Shape
             if (type == ShapefileGeometryType.NullShape)
                 return _gf.CreateLineString((Coordinate[])null);
 
-            if (type != ShapefileGeometryType.PolyLine)
+            if (type != ShapefileGeometryType.PolyLine && type != ShapefileGeometryType.PolyLineZ)
                 throw new Exception("Attempting to load a non-point as point.");
 
             // Read the box
@@ -156,6 +166,29 @@ namespace FastShapefile.Shape
                 lines[part] = _gf.CreateLineString(coords);
             }
 
+            if (type == ShapefileGeometryType.PolyLineZ)
+            {
+                // Don't use the min/max z values. Just read & throw away.
+                _reader.ReadDouble();
+                _reader.ReadDouble();
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    IList<Coordinate> coords = lines[i].Coordinates;
+                    for(int x = 0; x < coords.Count; x++)
+                        coords[i].Z = _reader.ReadDouble();
+                }
+
+                // Don't use the min/max m values. Just read & throw away.
+                _reader.ReadDouble();
+                _reader.ReadDouble();
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    IList<Coordinate> coords = lines[i].Coordinates;
+                    for (int x = 0; x < coords.Count; x++)
+                        coords[i].M = _reader.ReadDouble();
+                }
+            }
+
             if (lines.Length == 1)
                 return lines[0];
             else
@@ -172,7 +205,7 @@ namespace FastShapefile.Shape
             if (type == ShapefileGeometryType.NullShape)
                 return _gf.CreatePolygon(null, null);
 
-            if (type != ShapefileGeometryType.Polygon)
+            if (type != ShapefileGeometryType.Polygon && type != ShapefileGeometryType.PolygonZ)
                 throw new Exception("Attempting to load a non-polygon as polygon.");
 
             // Read the box
@@ -192,13 +225,14 @@ namespace FastShapefile.Shape
             // Read the parts and their points
             List<ILinearRing> shells = new List<ILinearRing>();
             List<ILinearRing> holes = new List<ILinearRing>();
-            for (int part = 0, last = numParts - 1; part < numParts; part++)
+            Coordinate[] allCoords = new Coordinate[numPoints];
+            for (int part = 0, last = numParts - 1, x = 0; part < numParts; part++)
             {
                 int start = partOffsets[part], stop = (part == last ? numPoints : partOffsets[part + 1]);
                 Coordinate[] coords = new Coordinate[stop - start];
 
                 for (int i = 0; i < coords.Length; i++)
-                    coords[i] = new Coordinate(
+                    coords[i] = allCoords[x++] = new Coordinate(
                         _reader.ReadDouble(),
                         _reader.ReadDouble());
 
@@ -209,6 +243,22 @@ namespace FastShapefile.Shape
                     holes.Add(ring);
                 else 
                     shells.Add(ring);
+            }
+
+            if (type == ShapefileGeometryType.PolygonZ)
+            {
+                // z min/max
+                _reader.ReadDouble();
+                _reader.ReadDouble();
+
+                for (int i = 0; i < allCoords.Length; i++)
+                    allCoords[i].Z = _reader.ReadDouble();
+
+                // m min/max
+                _reader.ReadDouble();
+                _reader.ReadDouble();
+                for (int i = 0; i < allCoords.Length; i++)
+                    allCoords[i].M = _reader.ReadDouble();
             }
 
             // Create the polygon
@@ -255,7 +305,7 @@ namespace FastShapefile.Shape
             if (type == ShapefileGeometryType.NullShape)
                 return _gf.CreateMultiPoint((Coordinate[])null);
 
-            if (type != ShapefileGeometryType.MultiPoint)
+            if (type != ShapefileGeometryType.MultiPoint && type != ShapefileGeometryType.MultiPointZ)
                 throw new Exception("Attempting to load a non-multipoint as multipoint.");
 
             // Read the box
@@ -268,6 +318,21 @@ namespace FastShapefile.Shape
                 coords[i] = new Coordinate(
                     _reader.ReadDouble(),
                     _reader.ReadDouble());
+
+            if (type == ShapefileGeometryType.MultiPointZ)
+            {
+                // Don't use the min/max z values. Just read & throw away.
+                _reader.ReadDouble();
+                _reader.ReadDouble();
+                for (int i = 0; i < coords.Length; i++)
+                    coords[i].Z = _reader.ReadDouble();
+
+                // Don't use the min/max m values. Just read & throw away.
+                _reader.ReadDouble();
+                _reader.ReadDouble();
+                for (int i = 0; i < coords.Length; i++)
+                    coords[i].M = _reader.ReadDouble();
+            }
 
             return _gf.CreateMultiPoint(coords);
         }
