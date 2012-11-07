@@ -52,7 +52,7 @@ namespace FastShapefile.Conversion
 
         private static void GeometryToSqlGeometry(IPoint geom, SqlGeometryBuilder bldr)
         {
-            bldr.BeginGeometry(OpenGisGeometryType.MultiPoint);
+            bldr.BeginGeometry(OpenGisGeometryType.Point);
 
             bldr.BeginFigure(geom.X, geom.Y);
             bldr.EndFigure();

@@ -44,7 +44,9 @@ namespace FastShapefile.Conversion
             StringBuilder bldr = new StringBuilder();
             bldr.Append("CREATE TABLE [");
             bldr.Append(tableName);
-            bldr.Append("] ([Id] [int] IDENTITY(1,1) NOT NULL, [Geom] [geometry] NOT NULL, ");
+            bldr.Append("] ([Id_");
+            bldr.Append(tableName);
+            bldr.Append("] [int] IDENTITY(1,1) NOT NULL, [Geom] [geometry] NOT NULL, ");
 
             DbfHeader header = reader.DbfHeader;
             for (int i = 0; i < header.Count; i++)
@@ -81,7 +83,9 @@ namespace FastShapefile.Conversion
 
             bldr.Append("CONSTRAINT [PK_");
             bldr.Append(tableName);
-            bldr.Append("] PRIMARY KEY CLUSTERED ([Id] ASC) WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON))");
+            bldr.Append("] PRIMARY KEY CLUSTERED ([Id_");
+            bldr.Append(tableName);
+            bldr.Append("] ASC) WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON))");
 
             return bldr.ToString();
         }
